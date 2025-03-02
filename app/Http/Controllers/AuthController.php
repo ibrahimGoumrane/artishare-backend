@@ -23,7 +23,7 @@ class AuthController extends Controller
         ]);
     
         // Set default profile image path (relative path)
-        $profilePhotoPath = 'storage/uploads/profile/profile1.jpeg';
+        $profilePhotoPath = '/storage/uploads/profile/profile1.jpeg';
     
         // Handle profile image upload to DigitalOcean Spaces
         if ($request->hasFile('profile_image')) {
@@ -33,7 +33,7 @@ class AuthController extends Controller
             // Store image in DigitalOcean Spaces
             $path = $profilePhoto->storeAs('storage/uploads/profile', $profilePhotoName, 'digitalocean');
     
-            $profilePhotoPath = $path; // Store only the relative path
+            $profilePhotoPath = Storage::disk('digitalocean')->url($path);; // Store only the relative path
     
             // Log to console (this will appear in Laravel logs)
             info("Profile image uploaded: " . $profilePhotoPath);
