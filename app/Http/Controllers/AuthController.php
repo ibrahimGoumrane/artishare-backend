@@ -42,7 +42,7 @@ class AuthController extends Controller
             'first_name' => $fields['first_name'],
             'last_name' => $fields['last_name'],
             'email' => $fields['email'],
-            'profile_image' => $profilePhotoPath, // Store relative path in DB
+            'profile_image' => '/'.$profilePhotoPath, // Store relative path in DB
             'password' => Hash::make($fields['password']),
         ]);
     

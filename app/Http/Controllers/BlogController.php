@@ -143,7 +143,7 @@ class BlogController extends Controller implements HasMiddleware
         // Return the updated blog and a success message
         return response()->json([
             'message' => ' saved successfully.',
-            'url' => $blogPhotoPath
+            'url' => '/'.$blogPhotoPath
         ], 200);
     }
     public function show(Blog $blog)
