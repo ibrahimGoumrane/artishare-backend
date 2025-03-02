@@ -31,21 +31,21 @@ class AuthController extends Controller
             $profilePhotoName = time() . '_' . $profilePhoto->getClientOriginalName();
     
             // Store image in DigitalOcean Spaces
-            $path = $profilePhoto->storeAs('/storage/uploads/profile', $profilePhotoName, 'digitalocean');
+            $path = $profilePhoto->storeAs('storage/uploads/profile', $profilePhotoName, 'digitalocean');
             // Log to console (this will appear in Laravel logs)
-            $profilePhotoPath = $path;
+            $profilePhotoPath = '/' . $path;
             info("Profile image uploaded: " . $path);
         }
-    
+        
         // Create the user
         $user = User::create([
             'first_name' => $fields['first_name'],
             'last_name' => $fields['last_name'],
             'email' => $fields['email'],
-            'profile_image' => '/'.$profilePhotoPath, // Store relative path in DB
+            'profile_image' => $profilePhotoPath, // Store relative path in DB
             'password' => Hash::make($fields['password']),
         ]);
-    
+        info("User created: " . $profilePhotoPath);
         // Generate API token
         $token = $user->createToken($user->first_name)->plainTextToken;
     
