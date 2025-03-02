@@ -14,48 +14,53 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         try {
+            // Validate input fields
             $fields = $request->validate([
-                'first_name' => 'required|max:255',
-                'last_name' => 'required|max:255',
-                'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:4096', // Validate profile image (optional)
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
                 'email' => 'required|email|unique:users',
-                'password' => 'required|confirmed', // Ensure passwords match
+                'password' => 'required|string|confirmed|min:8',
             ]);
-
-            // Default profile photo path
-            $profilePhotoPath = '/storage/uploads/profile/default.png'; // Ensure this exists in storage/app/uploads/profile/
-
-            // Check if 'profile_image' file is uploaded
+    
+            // Set default profile image path (relative path)
+            $profilePhotoPath = 'storage/uploads/profile/profile1.jpeg';
+    
+            // Handle profile image upload to DigitalOcean Spaces
             if ($request->hasFile('profile_image')) {
-                $profilePhoto = $request->file('profile_image'); // Get uploaded file
-
-                // Save the file to 'uploads/profile/' with a unique name
-                $profilePhotoName = time() . '_' . $profilePhoto->getClientOriginalName(); // Unique file name
-                $profilePhotoPath = $profilePhoto->storeAs('uploads/profile', $profilePhotoName, 'public'); // Efficient storage
-            }
-
-            // Create user with hashed password and the profile image
+                $profilePhoto = $request->file('profile_image');
+                $profilePhotoName =  time() . '_' . $profilePhoto->getClientOriginalName();
+                
+                // Store image in DigitalOcean Spaces
+                $path = $profilePhoto->storeAs('storage/uploads/profile', $profilePhotoName, 'digitalocean');
+            
+                $profilePhotoPath = $path; // Store only the relative path
+    
+                // Log to console (this will appear in Laravel logs)
+                info("Profile image uploaded: " . $profilePhotoPath);
+            } 
+            // Create the user
             $user = User::create([
                 'first_name' => $fields['first_name'],
                 'last_name' => $fields['last_name'],
                 'email' => $fields['email'],
-                'profile_image' => '/storage/' . $profilePhotoPath, // Path to profile image
-                'password' => Hash::make($fields['password']), // Hash the password before storing
+                'profile_image' => $profilePhotoPath, // Store relative path in DB
+                'password' => Hash::make($fields['password']),
             ]);
-
-            // Generate a token for the user
-            $token = $user->createToken($request->first_name);
-
-            // Return response with the user and token
+    
+            // Generate API token
+            $token = $user->createToken($user->first_name)->plainTextToken;
+    
             return response()->json([
                 'user' => $user->load(['blogs', 'comments', 'likes']),
-                'token' => $token->plainTextToken,
+                'token' => $token,
             ], 201);
+            
         } catch (Exception $e) {
-            // Log the error and return a generic server error response
-            Log::error('Error in register method: ' . $e->getMessage());
+            Log::error('Registration error: ' . $e->getMessage());
+    
             return response()->json([
-                'message' => 'An error occurred during registration. Please try again later.',
+                'message' => 'Registration failed. Please try again.',
             ], 500);
         }
     }

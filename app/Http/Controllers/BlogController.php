@@ -134,17 +134,18 @@ class BlogController extends Controller implements HasMiddleware
             $blogImage = $request->file('blog_image');
 
             // Generate a unique name for the file
-            $blogImageName = 'uploads/blogs/' . time() . '_' . $blogImage->getClientOriginalName();
+            $blogImageName =  time() . '_' . $blogImage->getClientOriginalName();
 
+
+            $path = $blogImage->storeAs('uploads/blogs', $blogImageName, 'digitalocean');
             // Save the file to storage
-            Storage::disk('public')->put($blogImageName, file_get_contents($blogImage));
-
+            $blogPhotoPath = Storage::disk('digitalocean')->url($path);
         }
 
         // Return the updated blog and a success message
         return response()->json([
             'message' => ' saved successfully.',
-            'url' => '/storage/'.$blogImageName
+            'url' => $blogPhotoPath
         ], 200);
     }
     public function show(Blog $blog)
@@ -197,16 +198,29 @@ class BlogController extends Controller implements HasMiddleware
 
     public function destroy(Blog $blog)
     {
-        Gate::authorize('delete', $blog);
-        if ($blog->preview) {
-            $previewPath = str_replace('/storage/', '', $blog->preview); // Remove the '/storage/' prefix to get the relative path
-            Storage::disk('public')->delete($previewPath);
-        }
-        $blog->delete();
-
-        return response()->json([
+        try {
+            // Authorize user
+            Gate::authorize('delete', $blog);
+    
+            // Delete preview image from DigitalOcean Spaces (if exists)
+            if ($blog->preview) {
+                $previewPath = str_replace(Storage::disk('digitalocean')->url(''), '', $blog->preview); // Remove base URL
+                Storage::disk('digitalocean')->delete($previewPath);
+            }
+    
+            // Delete blog
+            $blog->delete();
+    
+            return response()->json([
                 'message' => 'Blog deleted successfully.',
             ], 200);
+        } catch (Exception $e) {
+            Log::error('Blog deletion failed: ' . $e->getMessage());
+    
+            return response()->json([
+                'message' => 'An error occurred while deleting the blog.',
+            ], 500);
+        }
     }
 
 

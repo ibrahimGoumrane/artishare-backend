@@ -100,32 +100,34 @@ class UserController extends Controller implements HasMiddleware
         $request->validate([
             'profile_image' => 'nullable|sometimes|image|mimes:jpeg,png,jpg,gif,svg|max:4096', // Profile image validation
         ]);
-
+    
         if ($request->hasFile('profile_image')) {
             $profileImage = $request->file('profile_image');
-
-            // Generate a new filename for the uploaded file
-            $profileImageName = 'uploads/profile/' . time() . '_' . $profileImage->getClientOriginalName();
-
-            // Save the new profile image using the storage system
-            Storage::disk('public')->put($profileImageName, file_get_contents($profileImage));
-
-            // Optionally, delete the old profile image if it's not a default one
-            if ($user->profile_image && $user->profile_image !== '/storage/uploads/profile/default.png') {
-                Storage::disk('public')->delete($user->profile_image);
+    
+            // Generate a unique filename
+            $profileImageName = time() . '_' . $profileImage->getClientOriginalName();
+    
+            // Upload to DigitalOcean Spaces
+            $path = $profileImage->storeAs('uploads/profile', $profileImageName, 'digitalocean'); // Use 'digitalocean' disk
+            $profileImageUrl = Storage::disk('digitalocean')->url($path); // Get the full URL
+    
+            // Delete old profile image if it exists and is not the default
+            if ($user->profile_image && !str_contains($user->profile_image, 'default.png')) {
+                $oldImagePath = str_replace(Storage::disk('digitalocean')->url(''), '', $user->profile_image);
+                Storage::disk('digitalocean')->delete($oldImagePath);
             }
-
-            // Update the user's profile image path
+    
+            // Update the user's profile image
             $user->update([
-                'profile_image' => '/storage/' . $profileImageName,
+                'profile_image' => $profileImageUrl,
             ]);
-
+    
             return response()->json([
                 'message' => 'Profile image updated successfully.',
                 'user' => $user->load(['blogs', 'comments.blog', 'likes.blog']),
             ], 200);
         }
-
+    
         return response()->json([
             'message' => 'No profile image found in the request.',
         ], 400);
