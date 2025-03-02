@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title')->unique();
             $table->string('description', 255)->nullable();
             $table->text('body');
-            $table->string('preview')->default('/storage/uploads/blogs/default.jpg');
+            $table->string('preview')->default('/storage/storage/uploads/blogs/default.jpg');
             $table->foreignId('creator_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });

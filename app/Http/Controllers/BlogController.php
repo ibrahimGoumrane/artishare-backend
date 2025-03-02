@@ -135,11 +135,9 @@ class BlogController extends Controller implements HasMiddleware
 
             // Generate a unique name for the file
             $blogImageName =  time() . '_' . $blogImage->getClientOriginalName();
-
-
-            $path = $blogImage->storeAs('uploads/blogs', $blogImageName, 'digitalocean');
+            $path = $blogImage->storeAs('/storage/uploads/blogs', $blogImageName, 'digitalocean');
             // Save the file to storage
-            $blogPhotoPath = Storage::disk('digitalocean')->url($path);
+            $blogPhotoPath = $path;
         }
 
         // Return the updated blog and a success message

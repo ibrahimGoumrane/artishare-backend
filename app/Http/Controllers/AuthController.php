@@ -32,11 +32,9 @@ class AuthController extends Controller
     
             // Store image in DigitalOcean Spaces
             $path = $profilePhoto->storeAs('/storage/uploads/profile', $profilePhotoName, 'digitalocean');
-    
-            $profilePhotoPath = Storage::disk('digitalocean')->url($path);; // Store only the relative path
-    
             // Log to console (this will appear in Laravel logs)
-            info("Profile image uploaded: " . $profilePhotoPath);
+            $profilePhotoPath = $path;
+            info("Profile image uploaded: " . $path);
         }
     
         // Create the user
