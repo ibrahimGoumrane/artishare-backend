@@ -13,57 +13,50 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        try {
-            // Validate input fields
-            $fields = $request->validate([
-                'first_name' => 'required|string|max:255',
-                'last_name' => 'required|string|max:255',
-                'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
-                'email' => 'required|email|unique:users',
-                'password' => 'required|string|confirmed|min:8',
-            ]);
+        // Validate input fields
+        $fields = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'profile_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:4096',
+            'email' => 'required|email|unique:users',
+            'password' => 'required|string|confirmed|min:8',
+        ]);
     
-            // Set default profile image path (relative path)
-            $profilePhotoPath = 'storage/uploads/profile/profile1.jpeg';
+        // Set default profile image path (relative path)
+        $profilePhotoPath = 'storage/uploads/profile/profile1.jpeg';
     
-            // Handle profile image upload to DigitalOcean Spaces
-            if ($request->hasFile('profile_image')) {
-                $profilePhoto = $request->file('profile_image');
-                $profilePhotoName =  time() . '_' . $profilePhoto->getClientOriginalName();
-                
-                // Store image in DigitalOcean Spaces
-                $path = $profilePhoto->storeAs('storage/uploads/profile', $profilePhotoName, 'digitalocean');
-            
-                $profilePhotoPath = $path; // Store only the relative path
+        // Handle profile image upload to DigitalOcean Spaces
+        if ($request->hasFile('profile_image')) {
+            $profilePhoto = $request->file('profile_image');
+            $profilePhotoName = time() . '_' . $profilePhoto->getClientOriginalName();
     
-                // Log to console (this will appear in Laravel logs)
-                info("Profile image uploaded: " . $profilePhotoPath);
-            } 
-            // Create the user
-            $user = User::create([
-                'first_name' => $fields['first_name'],
-                'last_name' => $fields['last_name'],
-                'email' => $fields['email'],
-                'profile_image' => $profilePhotoPath, // Store relative path in DB
-                'password' => Hash::make($fields['password']),
-            ]);
+            // Store image in DigitalOcean Spaces
+            $path = $profilePhoto->storeAs('storage/uploads/profile', $profilePhotoName, 'digitalocean');
     
-            // Generate API token
-            $token = $user->createToken($user->first_name)->plainTextToken;
+            $profilePhotoPath = $path; // Store only the relative path
     
-            return response()->json([
-                'user' => $user->load(['blogs', 'comments', 'likes']),
-                'token' => $token,
-            ], 201);
-            
-        } catch (Exception $e) {
-            Log::error('Registration error: ' . $e->getMessage());
-    
-            return response()->json([
-                'message' => 'Registration failed. Please try again.',
-            ], 500);
+            // Log to console (this will appear in Laravel logs)
+            info("Profile image uploaded: " . $profilePhotoPath);
         }
+    
+        // Create the user
+        $user = User::create([
+            'first_name' => $fields['first_name'],
+            'last_name' => $fields['last_name'],
+            'email' => $fields['email'],
+            'profile_image' => $profilePhotoPath, // Store relative path in DB
+            'password' => Hash::make($fields['password']),
+        ]);
+    
+        // Generate API token
+        $token = $user->createToken($user->first_name)->plainTextToken;
+    
+        return response()->json([
+            'user' => $user->load(['blogs', 'comments', 'likes']),
+            'token' => $token,
+        ], 201);
     }
+    
 
     public function login(Request $request)
     {
