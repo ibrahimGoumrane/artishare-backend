@@ -31,7 +31,7 @@ class AuthController extends Controller
             $profilePhotoName = time() . '_' . $profilePhoto->getClientOriginalName();
     
             // Store image in DigitalOcean Spaces
-            $path = $profilePhoto->storeAs('storage/uploads/profile', $profilePhotoName, 'digitalocean');
+            $path = $profilePhoto->storeAs('/storage/uploads/profile', $profilePhotoName, 'digitalocean');
     
             $profilePhotoPath = Storage::disk('digitalocean')->url($path);; // Store only the relative path
     
